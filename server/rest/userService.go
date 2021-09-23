@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	v1 "github.com/thanhan17/demo/grpc/model/v1"
@@ -34,9 +33,16 @@ func getParam(c *gin.Context, param string) (string, error) {
 }
 
 func readAllUsers(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(c, timeout*time.Second)
+	ctx, cancel := context.WithTimeout(c, timeout)
 	defer cancel()
-	data, err := userClient.ReadAll(ctx, &v1.ReadAllRequest{Api: "1"})
+
+	api, err := getParam(c, "api")
+	if err != nil {
+		response(c, nil, err)
+		return
+	}
+
+	data, err := userClient.ReadAll(ctx, &v1.ReadAllRequest{Api: api})
 	if err != nil {
 		response(c, nil, errors.New(status.Convert(err).Message()))
 	}
@@ -44,8 +50,14 @@ func readAllUsers(c *gin.Context) {
 }
 
 func readUserById(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(c, timeout*time.Second)
+	ctx, cancel := context.WithTimeout(c, timeout)
 	defer cancel()
+
+	api, err := getParam(c, "api")
+	if err != nil {
+		response(c, nil, err)
+		return
+	}
 
 	strId, err := getParam(c, "id")
 	if err != nil {
@@ -59,45 +71,55 @@ func readUserById(c *gin.Context) {
 		return
 	}
 
-	data, err := userClient.Read(ctx, &v1.ReadRequest{Api: "1", Id: id})
+	data, err := userClient.Read(ctx, &v1.ReadRequest{Api: api, Id: id})
 	if err != nil {
 		response(c, nil, errors.New(status.Convert(err).Message()))
 	}
 	response(c, data, err)
 }
 
-func CreateUser(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(c, timeout*time.Second)
+func createUser(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, timeout)
 	defer cancel()
-
-	var user v1.User
-	err := c.BindJSON(&user)
+	api, err := getParam(c, "api")
 	if err != nil {
 		response(c, nil, err)
 		return
 	}
 
-	data, err := userClient.Create(ctx, &v1.CreateRequest{Api: "1", User: &user})
+	var user v1.User
+	if err = c.ShouldBindJSON(&user); err != nil {
+		response(c, nil, err)
+		return
+	}
+	log.Print(user)
+
+	data, err := userClient.Create(ctx, &v1.CreateRequest{Api: api, User: &user})
 	response(c, data, err)
 }
 
-func UpdateUser(c *gin.Context) {
+func updateUser(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, timeout)
 	defer cancel()
 
-	var user v1.User
-	err := c.BindJSON(&user)
+	api, err := getParam(c, "api")
 	if err != nil {
 		response(c, nil, err)
 		return
 	}
 
-	data, err := userClient.Update(ctx, &v1.UpdateRequest{Api: "1", User: &user})
+	var user v1.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		response(c, nil, err)
+		return
+	}
+
+	data, err := userClient.Update(ctx, &v1.UpdateRequest{Api: api, User: &user})
 	response(c, data, err)
 }
 
-func DeleteUser(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(c, timeout*time.Second)
+func deleteUser(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, timeout)
 	defer cancel()
 
 	strId, err := getParam(c, "id")

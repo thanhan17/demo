@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	timeout = 1
+	timeout = 100 * time.Millisecond
 )
 
 var (
@@ -49,9 +49,9 @@ func newRedisDB(host, port, password string) *redis.Client {
 func routeUser(router *gin.RouterGroup) {
 	router.GET("/", readAllUsers)
 	router.GET("/:id", readUserById)
-	router.POST("/", CreateUser)
-	router.PUT("/", UpdateUser)
-	router.DELETE("/", DeleteUser)
+	router.POST("/", createUser)
+	router.PUT("/", updateUser)
+	router.DELETE("/:id", deleteUser)
 }
 
 func main() {
@@ -84,7 +84,7 @@ func main() {
 	router.POST("/login", service.Login)
 	router.POST("/logout", middleware.TokenAuthMiddleware(), service.Logout)
 	router.POST("/refresh", service.Refresh)
-	api := router.Group("/api/user")
+	api := router.Group("/api/:api/user")
 	routeUser(api)
 
 	//Create http server, handle and listen at port
