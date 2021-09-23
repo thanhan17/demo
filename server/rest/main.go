@@ -9,12 +9,22 @@ import (
 	"time"
 
 	"github.com/thanhan17/demo/auth"
+	v1 "github.com/thanhan17/demo/grpc/model/v1"
 	handlers "github.com/thanhan17/demo/handler"
 	"github.com/thanhan17/demo/middleware"
+	"google.golang.org/grpc"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v7"
 	"github.com/joho/godotenv"
+)
+
+const (
+	timeout = 1
+)
+
+var (
+	userClient v1.UserServiceClient
 )
 
 func init() {
@@ -24,13 +34,24 @@ func init() {
 	}
 }
 
-func NewRedisDB(host, port, password string) *redis.Client {
+func newRedisDB(host, port, password string) *redis.Client {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     host + ":" + port,
 		Password: password,
 		DB:       0,
 	})
+	if err := redisClient.Ping().Err(); err != nil {
+		panic("Unable to connect to redis " + err.Error())
+	}
 	return redisClient
+}
+
+func routeUser(router *gin.RouterGroup) {
+	router.GET("/", readAllUsers)
+	router.GET("/:id", readUserById)
+	router.POST("/", CreateUser)
+	router.PUT("/", UpdateUser)
+	router.DELETE("/", DeleteUser)
 }
 
 func main() {
@@ -39,10 +60,19 @@ func main() {
 	redis_host := os.Getenv("REDIS_HOST")
 	redis_port := os.Getenv("REDIS_PORT")
 	redis_password := os.Getenv("REDIS_PASSWORD")
+	grpc_port := os.Getenv("GRPC_PORT")
 
 	//Redis
-	redisClient := NewRedisDB(redis_host, redis_port, redis_password)
+	redisClient := newRedisDB(redis_host, redis_port, redis_password)
 	defer redisClient.Close()
+
+	//GRPC service
+	conn, err := grpc.Dial(":"+grpc_port, grpc.WithInsecure())
+	if err != nil {
+		panic("Can't connect server gRPC" + err.Error())
+	}
+	defer conn.Close()
+	userClient = v1.NewUserServiceClient(conn)
 
 	//Service
 	var rd = auth.NewAuth(redisClient)
@@ -52,18 +82,20 @@ func main() {
 	//Handle
 	var router = gin.Default()
 	router.POST("/login", service.Login)
-	router.POST("/todo", middleware.TokenAuthMiddleware(), service.CreateTodo)
 	router.POST("/logout", middleware.TokenAuthMiddleware(), service.Logout)
 	router.POST("/refresh", service.Refresh)
+	api := router.Group("/api/user")
+	routeUser(api)
 
 	//Create http server, handle and listen at port
 	srv := &http.Server{
 		Addr:    appAddr,
 		Handler: router,
 	}
+
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
+			log.Fatalf("Error listen: %s\n", err)
 		}
 	}()
 
@@ -72,7 +104,6 @@ func main() {
 	signal.Notify(quit, os.Interrupt)
 	<-quit
 	log.Println("Shutdown Server ...")
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {

@@ -21,43 +21,37 @@ func NewProfile(rd auth.AuthInterface, tk auth.TokenInterface) *profileHandler {
 	return &profileHandler{rd, tk}
 }
 
-type User struct {
+type Account struct {
 	ID       string `json:"id"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
 //In memory user
-var user = User{
+var account = Account{
 	ID:       "1",
 	Username: "username",
 	Password: "password",
 }
 
-type Todo struct {
-	UserID string `json:"user_id"`
-	Title  string `json:"title"`
-	Body   string `json:"body"`
-}
-
 func (h *profileHandler) Login(c *gin.Context) {
-	var u User
-	if err := c.ShouldBindJSON(&u); err != nil {
+	var a Account
+	if err := c.ShouldBindJSON(&a); err != nil {
 		c.JSON(http.StatusUnprocessableEntity, "Invalid json provided")
 		return
 	}
-	fmt.Println(user)
+	fmt.Println(a)
 	//compare the user from the request, with the one we defined:
-	if user.Username != u.Username || user.Password != u.Password {
+	if account.Username != a.Username || account.Password != a.Password {
 		c.JSON(http.StatusUnauthorized, "Please provide valid login details")
 		return
 	}
-	ts, err := h.tk.CreateToken(user.ID)
+	ts, err := h.tk.CreateToken(account.ID)
 	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	saveErr := h.rd.CreateAuth(user.ID, ts)
+	saveErr := h.rd.CreateAuth(account.ID, ts)
 	if saveErr != nil {
 		c.JSON(http.StatusUnprocessableEntity, saveErr.Error())
 		return
@@ -80,29 +74,6 @@ func (h *profileHandler) Logout(c *gin.Context) {
 		}
 	}
 	c.JSON(http.StatusOK, "Successfully logged out")
-}
-
-func (h *profileHandler) CreateTodo(c *gin.Context) {
-	var td Todo
-	if err := c.ShouldBindJSON(&td); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, "invalid json")
-		return
-	}
-	metadata, err := h.tk.ExtractTokenMetadata(c.Request)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, "unauthorized")
-		return
-	}
-	userId, err := h.rd.FetchAuth(metadata.TokenUuid)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, "unauthorized")
-		return
-	}
-	td.UserID = userId
-
-	//you can proceed to save the  to a database
-
-	c.JSON(http.StatusCreated, td)
 }
 
 func (h *profileHandler) Refresh(c *gin.Context) {
