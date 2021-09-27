@@ -2,14 +2,10 @@
 syntax = "proto3";
 package v1;
 
-import "google/protobuf/timestamp.proto";
-
 message User {
     int64 id = 1;
     string name = 2;
     string phone = 3;
-    google.protobuf.Timestamp insert_at = 4;
-    google.protobuf.Timestamp update_at = 5;
 }
 
 message CreateRequest{

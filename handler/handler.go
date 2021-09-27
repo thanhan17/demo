@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/thanhan17/demo/auth"
 
@@ -35,6 +37,8 @@ var account = Account{
 }
 
 func (h *profileHandler) Login(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, time.Second)
+	defer cancel()
 	var a Account
 	if err := c.ShouldBindJSON(&a); err != nil {
 		c.JSON(http.StatusUnprocessableEntity, "Invalid json provided")
@@ -51,7 +55,7 @@ func (h *profileHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	saveErr := h.rd.CreateAuth(account.ID, ts)
+	saveErr := h.rd.CreateAuth(ctx, account.ID, ts)
 	if saveErr != nil {
 		c.JSON(http.StatusUnprocessableEntity, saveErr.Error())
 		return
@@ -64,10 +68,12 @@ func (h *profileHandler) Login(c *gin.Context) {
 }
 
 func (h *profileHandler) Logout(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, time.Second)
+	defer cancel()
 	//If metadata is passed and the tokens valid, delete them from the redis store
 	metadata, _ := h.tk.ExtractTokenMetadata(c.Request)
 	if metadata != nil {
-		deleteErr := h.rd.DeleteTokens(metadata)
+		deleteErr := h.rd.DeleteTokens(ctx, metadata)
 		if deleteErr != nil {
 			c.JSON(http.StatusBadRequest, deleteErr.Error())
 			return
@@ -77,6 +83,8 @@ func (h *profileHandler) Logout(c *gin.Context) {
 }
 
 func (h *profileHandler) Refresh(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, time.Second)
+	defer cancel()
 	mapToken := map[string]string{}
 	if err := c.ShouldBindJSON(&mapToken); err != nil {
 		c.JSON(http.StatusUnprocessableEntity, err.Error())
@@ -115,7 +123,7 @@ func (h *profileHandler) Refresh(c *gin.Context) {
 			return
 		}
 		//Delete the previous Refresh Token
-		delErr := h.rd.DeleteRefresh(refreshUuid)
+		delErr := h.rd.DeleteRefresh(ctx, refreshUuid)
 		if delErr != nil { //if any goes wrong
 			c.JSON(http.StatusUnauthorized, "unauthorized")
 			return
@@ -127,7 +135,7 @@ func (h *profileHandler) Refresh(c *gin.Context) {
 			return
 		}
 		//save the tokens metadata to redis
-		saveErr := h.rd.CreateAuth(userId, ts)
+		saveErr := h.rd.CreateAuth(ctx, userId, ts)
 		if saveErr != nil {
 			c.JSON(http.StatusForbidden, saveErr.Error())
 			return

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
@@ -26,7 +27,7 @@ func main() {
 	dbUser := os.Getenv("DBUser")
 	dbPassword := os.Getenv("DBPassword")
 	dbHost := os.Getenv("DBHost")
-	dbName := os.Getenv("DBModel")
+	dbName := os.Getenv("DBName")
 	param := "parseTime=true"
 	config := fmt.Sprintf("%s:%s@tcp(%s)/%s?%s", dbUser, dbPassword, dbHost, dbName, param)
 	db, err := sql.Open("mysql", config)
@@ -34,6 +35,9 @@ func main() {
 		log.Fatalf("failed to open database: %v", err)
 		return
 	}
+	db.SetMaxOpenConns(30)
+	db.SetMaxIdleConns(30)
+	db.SetConnMaxLifetime(time.Second * 5)
 	defer db.Close()
 	v1API := v1.NewUserServiceServer(db)
 	if err := grpc.RunServer(ctx, v1API, port); err != nil {

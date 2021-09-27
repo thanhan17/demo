@@ -92,9 +92,9 @@ func createUser(c *gin.Context) {
 		response(c, nil, err)
 		return
 	}
-	log.Print(user)
 
 	data, err := userClient.Create(ctx, &v1.CreateRequest{Api: api, User: &user})
+	log.Println(data.String())
 	response(c, data, err)
 }
 

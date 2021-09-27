@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v7"
+	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
 )
 
@@ -34,13 +34,13 @@ func init() {
 	}
 }
 
-func newRedisDB(host, port, password string) *redis.Client {
+func newRedisDB(ctx context.Context, host, port, password string) *redis.Client {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     host + ":" + port,
 		Password: password,
 		DB:       0,
 	})
-	if err := redisClient.Ping().Err(); err != nil {
+	if err := redisClient.Ping(ctx).Err(); err != nil {
 		panic("Unable to connect to redis " + err.Error())
 	}
 	return redisClient
@@ -63,7 +63,7 @@ func main() {
 	grpc_port := os.Getenv("GRPC_PORT")
 
 	//Redis
-	redisClient := newRedisDB(redis_host, redis_port, redis_password)
+	redisClient := newRedisDB(context.Background(), redis_host, redis_port, redis_password)
 	defer redisClient.Close()
 
 	//GRPC service
