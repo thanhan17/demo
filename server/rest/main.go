@@ -8,15 +8,14 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/thanhan17/demo/auth"
 	v1 "github.com/thanhan17/demo/grpc/model/v1"
 	handlers "github.com/thanhan17/demo/handler"
+	redislib "github.com/thanhan17/demo/lib/redislib"
 	"github.com/thanhan17/demo/middleware"
 	"google.golang.org/grpc"
-
-	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
-	"github.com/joho/godotenv"
 )
 
 const (
@@ -32,18 +31,6 @@ func init() {
 		log.Print("No .env file found")
 		panic("No .env file found")
 	}
-}
-
-func newRedisDB(ctx context.Context, host, port, password string) *redis.Client {
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     host + ":" + port,
-		Password: password,
-		DB:       0,
-	})
-	if err := redisClient.Ping(ctx).Err(); err != nil {
-		panic("Unable to connect to redis " + err.Error())
-	}
-	return redisClient
 }
 
 func routeUser(router *gin.RouterGroup) {
@@ -63,7 +50,7 @@ func main() {
 	grpc_port := os.Getenv("GRPC_PORT")
 
 	//Redis
-	redisClient := newRedisDB(context.Background(), redis_host, redis_port, redis_password)
+	redisClient := redislib.NewRedisDB(context.Background(), redis_host, redis_port, redis_password)
 	defer redisClient.Close()
 
 	//GRPC service

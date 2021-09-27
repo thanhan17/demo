@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -59,13 +58,7 @@ func readUserById(c *gin.Context) {
 		return
 	}
 
-	strId, err := getParam(c, "id")
-	if err != nil {
-		response(c, nil, err)
-		return
-	}
-
-	id, err := strconv.ParseInt(strId, 10, 64)
+	id, err := getParam(c, "id")
 	if err != nil {
 		response(c, nil, err)
 		return
@@ -122,13 +115,7 @@ func deleteUser(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c, timeout)
 	defer cancel()
 
-	strId, err := getParam(c, "id")
-	if err != nil {
-		response(c, nil, err)
-		return
-	}
-
-	id, err := strconv.ParseInt(strId, 10, 64)
+	id, err := getParam(c, "id")
 	if err != nil {
 		response(c, nil, err)
 		return

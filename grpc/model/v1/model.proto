@@ -1,11 +1,14 @@
 // todo-service.proto
 syntax = "proto3";
 package v1;
+import "google/protobuf/timestamp.proto";
 
 message User {
-    int64 id = 1;
+    string id = 1;
     string name = 2;
     string phone = 3;
+    google.protobuf.Timestamp created_at = 4;
+    google.protobuf.Timestamp update_at = 5;
 }
 
 message CreateRequest{
@@ -17,12 +20,12 @@ message CreateRequest{
 
 message CreateResponse{
     string api = 1;
-    int64 id = 2;
+    string id = 2;
 }
 
 message ReadRequest{
     string api = 1;
-    int64 id = 2;
+    string id = 2;
 }
 
 message ReadResponse{
@@ -43,7 +46,7 @@ message UpdateResponse{
 
 message DeleteRequest{
     string api = 1;
-    int64 id = 2;
+    string id = 2;
 }
 
 message DeleteResponse{
