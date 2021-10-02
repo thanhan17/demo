@@ -3,12 +3,13 @@ package auth
 import (
 	"errors"
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/twinj/uuid"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/twinj/uuid"
 )
 
 type tokenservice struct{}
@@ -103,7 +104,7 @@ func extract(token *jwt.Token) (*AccessDetails, error) {
 	if ok && token.Valid {
 		accessUuid, ok := claims["access_uuid"].(string)
 		userId, userOk := claims["user_id"].(string)
-		if ok == false  || userOk == false {
+		if ok == false || userOk == false {
 			return nil, errors.New("unauthorized")
 		} else {
 			return &AccessDetails{
@@ -126,6 +127,3 @@ func (t *tokenservice) ExtractTokenMetadata(r *http.Request) (*AccessDetails, er
 	}
 	return acc, nil
 }
-
-
-

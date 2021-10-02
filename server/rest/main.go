@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	rotatelogs "github.com/lestrrat/go-file-rotatelogs"
 	"github.com/thanhan17/demo/auth"
 	v1 "github.com/thanhan17/demo/grpc/model/v1"
 	handlers "github.com/thanhan17/demo/handler"
@@ -27,10 +28,20 @@ var (
 )
 
 func init() {
+	rl, err := rotatelogs.New(
+		"logs/log.%Y%m%d%H",
+		rotatelogs.WithClock(rotatelogs.Local),
+		rotatelogs.WithRotationTime(time.Hour),
+	)
+	if err != nil {
+		panic("Can't create logger")
+	}
+	log.SetOutput(rl)
 	if err := godotenv.Load(); err != nil {
 		log.Print("No .env file found")
 		panic("No .env file found")
 	}
+
 }
 
 func routeUser(router *gin.RouterGroup) {
@@ -61,7 +72,7 @@ func main() {
 	defer conn.Close()
 	userClient = v1.NewUserServiceClient(conn)
 
-	//Service
+	//Auth Service
 	var rd = auth.NewAuth(redisClient)
 	var tk = auth.NewToken()
 	var service = handlers.NewProfile(rd, tk)
@@ -81,6 +92,7 @@ func main() {
 	}
 
 	go func() {
+		log.Printf("Listen on Server %s", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Error listen: %s\n", err)
 		}
@@ -96,5 +108,5 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal("Server Shutdown:", err)
 	}
-	log.Println("Server exiting")
+	defer log.Println("Server exiting")
 }

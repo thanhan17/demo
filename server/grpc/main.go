@@ -11,6 +11,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
+	rotatelogs "github.com/lestrrat/go-file-rotatelogs"
 	"github.com/thanhan17/demo/grpc"
 	v1 "github.com/thanhan17/demo/grpc/model/v1"
 	redislib "github.com/thanhan17/demo/lib/redislib"
@@ -21,6 +22,15 @@ const (
 )
 
 func init() {
+	rl, err := rotatelogs.New(
+		"logs/log.%Y%m%d%H",
+		rotatelogs.WithClock(rotatelogs.Local),
+		rotatelogs.WithRotationTime(time.Hour),
+	)
+	if err != nil {
+		panic("Can't create logger")
+	}
+	log.SetOutput(rl)
 	if err := godotenv.Load(); err != nil {
 		log.Print("No .env file found")
 		panic("No .env file found")

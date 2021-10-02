@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -93,6 +94,7 @@ func (tk *service) DeleteTokens(ctx context.Context, authD *AccessDetails) error
 func (tk *service) DeleteRefresh(ctx context.Context, refreshUuid string) error {
 	//delete refresh token
 	deleted, err := tk.client.Del(ctx, refreshUuid).Result()
+	log.Println(refreshUuid)
 	if err != nil || deleted == 0 {
 		return err
 	}
