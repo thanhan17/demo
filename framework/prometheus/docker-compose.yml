@@ -3,7 +3,7 @@ version: '3.8'
 networks:
   monitoring:
     driver: bridge
-    
+
 volumes:
   prometheus_data: {}
   grafana-data:
@@ -12,6 +12,7 @@ services:
     image: prom/node-exporter:latest
     container_name: node-exporter
     restart: unless-stopped
+    network_mode: "host"
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -21,15 +22,28 @@ services:
       - '--path.rootfs=/rootfs'
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    ports:
-      - "9100:9100"
-    networks:
-      - monitoring
+    expose:
+      - 9100
 
+  mysqld-exporter:
+    image: quay.io/prometheus/mysqld-exporter
+    container_name: mysqld-exporter
+    restart: unless-stopped
+    network_mode: "host"
+    environment:
+      - DATA_SOURCE_NAME=exporter:A@12345bcd@(localhost:3306)/
+    command:
+      - --collect.info_schema.tablestats
+      - --collect.auto_increment.columns
+      - --collect.global_status
+    expose:
+      - 9104
+    
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
     restart: unless-stopped
+    network_mode: "host"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
@@ -39,21 +53,17 @@ services:
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
-    ports:
-      - "8081:9090"
-    networks:
-      - monitoring
+    expose:
+      - 9090
+    
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
     restart: unless-stopped
-    ports:
-      - 3000:3000
+    network_mode: "host"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: secret
     volumes:
       - grafana-data:/var/lib/grafana
     depends_on:
       - prometheus
-    networks:
-      - monitoring

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	rotatelogs "github.com/lestrrat/go-file-rotatelogs"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	v1 "github.com/thanhan17/demo/source/grpc/model/v1"
 	logging "github.com/thanhan17/demo/source/pkg/logging"
 	redislib "github.com/thanhan17/demo/source/pkg/redislib"
@@ -47,6 +49,14 @@ func init() {
 	}
 }
 
+func promListen(srv *http.Server) {
+	log.Info("Starting listen on server", zap.String("Address", srv.Addr), zap.String("service", "monitoring"))
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Error("Error listen: ", zap.Error(err))
+		panic("Error listen: " + err.Error())
+	}
+}
+
 func main() {
 	ctx := context.Background()
 	port := os.Getenv("GRPC_PORT")
@@ -54,6 +64,7 @@ func main() {
 	dbPassword := os.Getenv("DBPassword")
 	dbHost := os.Getenv("DBHost")
 	dbName := os.Getenv("DBName")
+	promAddr := os.Getenv("PROM_GRPC_ADDR")
 	param := "parseTime=true"
 	config := fmt.Sprintf("%s:%s@tcp(%s)/%s?%s", dbUser, dbPassword, dbHost, dbName, param)
 	db, err := sql.Open("mysql", config)
@@ -66,6 +77,12 @@ func main() {
 	db.SetConnMaxLifetime(time.Second * 5)
 	defer db.Close()
 
+	//Prometheus
+	srvProm := &http.Server{
+		Addr:    promAddr,
+		Handler: promhttp.Handler(),
+	}
+	go promListen(srvProm)
 	//Env
 	redis_host := os.Getenv("REDIS_HOST")
 	redis_port := os.Getenv("REDIS_PORT")

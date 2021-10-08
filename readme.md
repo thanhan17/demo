@@ -1,7 +1,7 @@
 # Start server
 ```zsh
-go run source/grpc/*
-go run source/api/*
+go run source/grpc/*.go
+go run source/api/*.go
 ```
 # Kafka
 ## Start zookeeper

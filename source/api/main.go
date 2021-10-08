@@ -84,7 +84,7 @@ func main() {
 	redis_port := os.Getenv("REDIS_PORT")
 	redis_password := os.Getenv("REDIS_PASSWORD")
 	grpc_port := os.Getenv("GRPC_PORT")
-	promAddr := ":" + os.Getenv("METRICS_PORT")
+	promAddr := os.Getenv("PROM_API_ADDR")
 	//Redis
 	redisClient := redislib.NewRedisDB(context.Background(), redis_host, redis_port, redis_password)
 	defer redisClient.Close()
@@ -129,7 +129,10 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srvAuthAndAPI.Shutdown(ctx); err != nil {
-		log.Info("Server Shutdown:", zap.Error(err))
+		log.Info("Server API Shutdown:", zap.Error(err))
+	}
+	if err := srvProm.Shutdown(ctx); err != nil {
+		log.Info("Server Prometheus Shutdown:", zap.Error(err))
 	}
 	defer log.Info("Server exiting")
 }
