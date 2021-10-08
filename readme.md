@@ -1,7 +1,7 @@
 # Start server
-```go
-go run server/grpc/main.go
-go run server/rest/*.go
+```zsh
+go run source/grpc/*
+go run source/api/*
 ```
 # Kafka
 ## Start zookeeper
@@ -32,5 +32,6 @@ bin/kafka-topics.sh --describe --topic mytopic --bootstrap-server localhost:9095
 ```
 ## Test
 ```zsh
-go run kafka/main.go
+go run framework/kafka/producer/producer.go
+go run framework/kafka/consumer/consumer.go -brokers="127.0.0.1:9093" -topics="mytopic" -group="mygroup"
 ```
