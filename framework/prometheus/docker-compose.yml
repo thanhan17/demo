@@ -8,6 +8,14 @@ volumes:
   prometheus_data: {}
   grafana-data:
 services:
+  kafka_exporter:
+    image: danielqsj/kafka-exporter
+    container_name: kafka-exporter
+    restart: unless-stopped
+    network_mode: "host"
+    command: --kafka.server=localhost:9093 --kafka.server=localhost:9094 --kafka.server=localhost:9095 --zookeeper.server=localhost:2181
+    expose:
+      - 9308
   node-exporter:
     image: prom/node-exporter:latest
     container_name: node-exporter

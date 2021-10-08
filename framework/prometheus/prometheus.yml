@@ -22,8 +22,12 @@ scrape_configs:
     scrape_interval: 10s
     static_configs:
     - targets: ['localhost:9091']
-    
+
   - job_name: "grpc"
     scrape_interval: 10s
     static_configs:
     - targets: ['localhost:9092']
+
+  - job_name: 'kafka_exporter'
+    static_configs:
+      - targets: ['localhost:9308']
